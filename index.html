@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hacker Simulator</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    color: #00ff00;
+    font-family: "Courier New", monospace;
+    overflow: hidden;
+}
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+
+#game {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 10px;
+}
+
+#terminal {
+    background: rgba(0,0,0,0.8);
+    border: 2px solid #00ff00;
+    height: 420px;
+    padding: 10px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+#input-line {
+    display: flex;
+    margin-top: 5px;
+}
+
+#prompt {
+    margin-right: 6px;
+}
+
+#command {
+    background: black;
+    border: none;
+    color: #00ff00;
+    outline: none;
+    flex: 1;
+    font-family: inherit;
+}
+
+#progress {
+    width: 100%;
+    height: 12px;
+    border: 1px solid #00ff00;
+    margin-top: 5px;
+    display: none;
+}
+
+#bar {
+    height: 100%;
+    width: 0%;
+    background: #00ff00;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div id="game">
+    <div id="terminal"></div>
+
+    <div id="progress">
+        <div id="bar"></div>
+    </div>
+
+    <div id="input-line">
+        <span id="prompt">root@system:~$</span>
+        <input id="command" autofocus />
+    </div>
+</div>
+
+<script>
+/* ===== MATRIX RAIN ===== */
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const letters = "010101 HACK SYSTEM ACCESS ROOT".split("");
+const fontSize = 14;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
+
+function drawMatrix() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#00ff00";
+    ctx.font = fontSize + "px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+        }
+        drops[i]++;
+    }
+}
+setInterval(drawMatrix, 50);
+
+/* ===== TERMINAL LOGIC ===== */
+const terminal = document.getElementById("terminal");
+const input = document.getElementById("command");
+const progress = document.getElementById("progress");
+const bar = document.getElementById("bar");
+
+let score = 0;
+
+function print(text) {
+    terminal.innerHTML += text + "\n";
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function typePrint(text, speed = 20, cb) {
+    let i = 0;
+    const interval = setInterval(() => {
+        terminal.innerHTML += text.charAt(i);
+        terminal.scrollTop = terminal.scrollHeight;
+        i++;
+        if (i >= text.length) {
+            clearInterval(interval);
+            terminal.innerHTML += "\n";
+            if (cb) cb();
+        }
+    }, speed);
+}
+
+print("Hacker Simulator v2.0");
+print("Type 'help' for commands");
+
+input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        const cmd = input.value.trim();
+        print("root@system:~$ " + cmd);
+        input.value = "";
+        handleCommand(cmd);
+    }
+});
+
+function handleCommand(cmd) {
+    if (cmd === "help") {
+        print("Commands:");
+        print("hack   - hack a system");
+        print("scan   - scan network");
+        print("status - show score");
+        print("clear  - clear terminal");
+    }
+    else if (cmd === "clear") {
+        terminal.innerHTML = "";
+    }
+    else if (cmd === "scan") {
+        typePrint("Scanning network...");
+        setTimeout(() => typePrint("5 devices found"), 800);
+    }
+    else if (cmd === "status") {
+        print("System OK");
+        print("Score: " + score);
+    }
+    else if (cmd === "hack") {
+        startHack();
+    }
+    else {
+        print("Command not found");
+    }
+}
+
+/* ===== HACK WITH PROGRESS BAR ===== */
+function startHack() {
+    const steps = [
+        "Connecting...",
+        "Bypassing firewall...",
+        "Cracking password...",
+        "Decrypting files..."
+    ];
+    let i = 0;
+    let percent = 0;
+
+    progress.style.display = "block";
+    bar.style.width = "0%";
+
+    const progressInterval = setInterval(() => {
+        percent += 2;
+        bar.style.width = percent + "%";
+        if (percent >= 100) clearInterval(progressInterval);
+    }, 80);
+
+    function next() {
+        if (i < steps.length) {
+            typePrint(steps[i], 25, () => {
+                i++;
+                setTimeout(next, 400);
+            });
+        } else {
+            progress.style.display = "none";
+            const success = Math.random() > 0.3;
+            if (success) {
+                typePrint("ACCESS GRANTED ✔");
+                score += 150;
+            } else {
+                typePrint("ACCESS DENIED ✖");
+            }
+        }
+    }
+    next();
+}
+</script>
+</body>
+</html>
