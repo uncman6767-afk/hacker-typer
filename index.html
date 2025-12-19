@@ -12,14 +12,12 @@ body {
     font-family: "Courier New", monospace;
     overflow: hidden;
 }
-
 canvas {
     position: fixed;
     inset: 0;
     z-index: 0;
-    pointer-events: none; /* 🔴 IMPORTANT FIX */
+    pointer-events: none;
 }
-
 #game {
     position: relative;
     z-index: 1;
@@ -27,7 +25,6 @@ canvas {
     margin: 20px auto;
     padding: 10px;
 }
-
 #terminal {
     background: rgba(0,0,0,0.85);
     border: 2px solid #00ff00;
@@ -36,16 +33,13 @@ canvas {
     overflow-y: auto;
     white-space: pre-wrap;
 }
-
 #input-line {
     display: flex;
     margin-top: 5px;
 }
-
 #prompt {
     margin-right: 6px;
 }
-
 #command {
     background: black;
     border: none;
@@ -53,7 +47,7 @@ canvas {
     outline: none;
     flex: 1;
     font-family: inherit;
-    caret-color: #00ff00; /* blinking cursor */
+    caret-color: #00ff00;
 }
 </style>
 </head>
@@ -64,18 +58,16 @@ canvas {
 
 <div id="game">
     <div id="terminal"></div>
-
     <div id="input-line">
         <span id="prompt">root@system:~$</span>
-        <input id="command" autocomplete="off" />
+        <input id="command" autocomplete="off">
     </div>
 </div>
 
 <script>
-/* ===== MATRIX BACKGROUND ===== */
+/* ===== MATRIX ===== */
 const canvas = document.getElementById("matrix");
 const ctx = canvas.getContext("2d");
-
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -88,34 +80,55 @@ const fontSize = 14;
 let columns = canvas.width / fontSize;
 let drops = Array(Math.floor(columns)).fill(1);
 
-function matrix() {
+setInterval(() => {
     ctx.fillStyle = "rgba(0,0,0,0.05)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = "#00ff00";
     ctx.font = fontSize + "px monospace";
 
     for (let i = 0; i < drops.length; i++) {
-        const text = chars[Math.floor(Math.random() * chars.length)];
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
-            drops[i] = 0;
-        }
+        const t = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(t, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
         drops[i]++;
     }
-}
-setInterval(matrix, 50);
+}, 50);
 
 /* ===== TERMINAL ===== */
 const terminal = document.getElementById("terminal");
 const input = document.getElementById("command");
 
 let score = 0;
+let currentMission = 0;
 
-// FORCE FOCUS (THE MAIN FIX)
-function focusInput() {
-    input.focus();
-}
+const missions = [
+    {
+        name: "School Server",
+        desc: "Access the internal school network",
+        difficulty: 1,
+        reward: 100
+    },
+    {
+        name: "Bank Database",
+        desc: "Bypass bank security firewall",
+        difficulty: 2,
+        reward: 200
+    },
+    {
+        name: "Government Node",
+        desc: "Crack encrypted government files",
+        difficulty: 3,
+        reward: 350
+    },
+    {
+        name: "Private Corporation",
+        desc: "Extract confidential corporate data",
+        difficulty: 4,
+        reward: 500
+    }
+];
+
+function focusInput() { input.focus(); }
 focusInput();
 document.addEventListener("click", focusInput);
 
@@ -126,24 +139,24 @@ function print(text) {
 
 function typePrint(text, speed = 20, cb) {
     let i = 0;
-    const interval = setInterval(() => {
+    const int = setInterval(() => {
         terminal.textContent += text.charAt(i);
         terminal.scrollTop = terminal.scrollHeight;
         i++;
         if (i >= text.length) {
-            clearInterval(interval);
+            clearInterval(int);
             terminal.textContent += "\n";
             if (cb) cb();
         }
     }, speed);
 }
 
-print("Hacker Simulator v3.0");
+print("Hacker Simulator v4.0");
 print("Type 'help' to begin");
 
 input.addEventListener("keydown", e => {
     if (e.key === "Enter") {
-        const cmd = input.value.trim();
+        const cmd = input.value.trim().toLowerCase();
         print("root@system:~$ " + cmd);
         input.value = "";
         handle(cmd);
@@ -153,38 +166,48 @@ input.addEventListener("keydown", e => {
 function handle(cmd) {
     if (cmd === "help") {
         print("Commands:");
-        print("hack   - hack a system");
-        print("scan   - scan network");
-        print("status - show score");
-        print("clear  - clear terminal");
+        print("missions - list missions");
+        print("mission  - current mission");
+        print("hack     - hack mission");
+        print("status   - progress");
+        print("clear");
+    }
+    else if (cmd === "missions") {
+        missions.forEach((m, i) => {
+            print(`${i === currentMission ? "▶" : " "} ${i+1}. ${m.name}`);
+        });
+    }
+    else if (cmd === "mission") {
+        const m = missions[currentMission];
+        print("Mission: " + m.name);
+        print("Objective: " + m.desc);
+        print("Reward: " + m.reward);
+    }
+    else if (cmd === "status") {
+        print("Score: " + score);
+        print("Mission: " + (currentMission + 1) + "/" + missions.length);
     }
     else if (cmd === "clear") {
         terminal.textContent = "";
     }
-    else if (cmd === "scan") {
-        typePrint("Scanning network...");
-        setTimeout(() => typePrint("4 targets found"), 800);
-    }
-    else if (cmd === "status") {
-        print("Score: " + score);
-    }
     else if (cmd === "hack") {
-        hack();
+        hackMission();
     }
     else {
         print("Command not found");
     }
 }
 
-function hack() {
+function hackMission() {
+    const m = missions[currentMission];
     const steps = [
-        "Connecting...",
-        "Bypassing firewall...",
-        "Cracking credentials...",
-        "Decrypting data..."
+        "Connecting to target...",
+        "Bypassing security...",
+        "Cracking encryption...",
+        "Extracting data..."
     ];
-    let i = 0;
 
+    let i = 0;
     function next() {
         if (i < steps.length) {
             typePrint(steps[i], 25, () => {
@@ -192,23 +215,21 @@ function hack() {
                 setTimeout(next, 400);
             });
         } else {
-            const success = Math.random() > 0.3;
+            const success = Math.random() > (0.2 + m.difficulty * 0.1);
             if (success) {
-                typePrint("ACCESS GRANTED ✔");
-                score += 150;
+                typePrint("MISSION SUCCESS ✔");
+                score += m.reward;
+                currentMission = Math.min(currentMission + 1, missions.length - 1);
             } else {
-                typePrint("ACCESS DENIED ✖");
+                typePrint("MISSION FAILED ✖");
             }
         }
     }
     next();
 }
 </script>
-
 </body>
 </html>
-
-
 
 
 
